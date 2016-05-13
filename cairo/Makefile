@@ -9,10 +9,11 @@ PC_FILE = $(BASE_NAME).pc
 HEADER = identicon.h
 TARGET_ONLY = NO
 
-SOURCES = identicon.c libs/lodepng.c
+SOURCES = identicon.c
 OBJS = $(SOURCES:.c=.o)
+DEPS = cairo
 
-CFLAGS = -Wall -Wextra -fPIC -Ilibs -DLODEPNG_NO_COMPILE_CPP
+CFLAGS = -Wall -Wextra -fPIC
 LDFLAGS = -shared -lm
 
 # Check what crypto library we will use
@@ -23,11 +24,10 @@ else ifeq ($(USE_OPENSSL), 1)
     DEPS += openssl
     CFLAGS += -DUSE_OPENSSL
 else
-    SOURCES += libs/sha512.c
+    SOURCES += sha512.c
 endif
 
 # Check if we can build identicon
-ifdef DEPS
 CHECK_DEPS = $(shell pkg-config --exists $(DEPS) || echo -n "error")
 ifneq ($(CHECK_DEPS), error)
     CFLAGS += $(shell pkg-config --cflags $(DEPS))
@@ -38,7 +38,6 @@ else ifneq ($(MAKECMDGOALS), clean)
     $(warning ERROR -- You need these libraries)
     $(warning ERROR -- $(MISSING_LIBS))
     $(error ERROR)
-endif
 endif
 
 # Check on what system we are running
@@ -84,7 +83,7 @@ $(TARGET): $(OBJS)
 
 example: $(OBJS) example.o
 	@echo "  LD    $@"
-	@$(CC) -lm $(shell pkg-config --libs $(DEPS) 2>/dev/null) $^ -o $@
+	@$(CC) -lm $(shell pkg-config --libs $(DEPS)) $^ -o $@
 
 install: $(TARGET) $(HEADER) $(PC_FILE)
 	@echo "Installing $(TARGET)"
@@ -110,6 +109,6 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 	sed -e 's:__LIBS__:$(DEPS):g' $$pc_file > temp_file && mv temp_file $$pc_file
 
 clean:
-	rm -f *.o libs/*.o example $(TARGET) $(STATIC_LIB)
+	rm -f *.o example $(TARGET) $(STATIC_LIB)
 
 .PHONY: all clean install

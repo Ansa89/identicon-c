@@ -7,5 +7,5 @@ Description: Library to create identicons from a text string
 Version: __VERSION__
 Requires.private: __LIBS__
 Libs: -L${libdir} -lidenticon
-Libs.private: 
+Libs.private: -lm
 Cflags: -I${includedir}

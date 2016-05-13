@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <cairo.h>
 
 #if defined(USE_SODIUM)
 #include <sodium.h>
@@ -38,10 +38,6 @@
 #include "sha512.h"
 #endif
 
-#ifndef LODEPNG_NO_COMPILE_CPP
-#define LODEPNG_NO_COMPILE_CPP
-#endif
-#include "lodepng.h"
 #include "identicon.h"
 
 
@@ -57,10 +53,9 @@ static identicon_RGB_t hsl2rgb(double h, double s, double b) {
 	hsl[4] = b + (int)h % 1 * s;
 	hsl[5] = b + s;
 
-	color.red = floor(hsl[(int)h % 6] * 255);
-	color.green = floor(hsl[((int)h|16) % 6] * 255);
-	color.blue = floor(hsl[((int)h|8) % 6] * 255);
-
+	color.red = hsl[(int)h % 6];
+	color.green = hsl[((int)h|16) % 6];
+	color.blue = hsl[((int)h|8) % 6];
 
 	return color;
 }
@@ -126,64 +121,40 @@ static unsigned char *sha512sum(unsigned char *str, unsigned char *salt) {
 	return hash;
 }
 
-static void draw_rectangle(unsigned char *img, uint32_t x, uint32_t y, uint32_t width, uint32_t height,
-		identicon_RGB_t color, identicon_options_t *opts, bool paint_fg) {
-	uint32_t i, j, idx;
-
-	if ((img == NULL) || (opts->transparent && !paint_fg))
+static void draw_part(cairo_t *context, double x, double y, double width, double height, identicon_RGB_t color, bool transparent, bool stroke, bool even) {
+	if (transparent && !even)
 		return;
 
-	if (opts->stroke && paint_fg) {
-		if ((x >= opts->stroke_size) && (width <= opts->size - (2 * opts->stroke_size))) {
-			x -= opts->stroke_size;
-			width += (2 * opts->stroke_size);
-		}
-		if ((y >= opts->stroke_size) && (height <= opts->size - (2 * opts->stroke_size))) {
-			y -= opts->stroke_size;
-			height += (2 * opts->stroke_size);
-		}
-	}
+	cairo_set_source_rgba(context, color.red, color.green, color.blue, 1);
+	cairo_rectangle(context, x, y, width, height);
+	cairo_fill(context);
 
-	for (i = 0; i < width; i++) {
-		if (i + x >= opts->size) // opts->size intended as image width
-			break;
-
-		for (j = 0; j < height; j++) {
-			if (j + y >= opts->size) // opts->size intended as image height
-				break;
-
-			idx = 4 * opts->size * (j + y); // opts->size intended as image width
-			idx += 4 * (i + x);
-			img[idx] = color.red;
-			img[idx+1] = color.green;
-			img[idx+2] = color.blue;
-			img[idx+3] = 255;
-		}
+	if (stroke && even) {
+		cairo_set_source_rgba(context, color.red, color.green, color.blue, 1);
+		cairo_rectangle(context, x, y, width, height);
+		cairo_stroke(context);
 	}
 }
 
-static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
-	bool do_paint;
+static void draw_identicon(cairo_t *context, identicon_options_t *opts) {
+	bool even;
 	int i;
 	double h;
 	unsigned char *hash;
 	double base_margin = floor(opts->size * opts->margin);
 	double cell = floor((opts->size - (base_margin * 2)) / 5);
 	double margin = floor((opts->size - (cell * 5)) / 2);
-	identicon_RGB_t background, foreground;
-
-	if ((img == NULL) || (opts == NULL))
-		return;
+	identicon_RGB_t background, foreground, color;
 
 	hash = sha512sum((unsigned char *)opts->str, (unsigned char *)opts->salt);
 
 	// Background color
-	background.red = 240;
-	background.green = 240;
-	background.blue = 240;
+	background.red = 240.0 / 255;
+	background.green = 240.0 / 255;
+	background.blue = 240.0 / 255;
 
 	if (!opts->transparent)
-		draw_rectangle(img, 0, 0, opts->size, opts->size, background, opts, false);
+		draw_part(context, 0, 0, opts->size, opts->size, background, opts->transparent, opts->stroke, false);
 
 	// Foreground color
 	h = (double)hex2int(&hash[strlen((char *)hash) - 7]);
@@ -195,18 +166,21 @@ static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 		unsigned char c[2];
 		c[0] = hash[i];
 		c[1] = '\0';
-		do_paint = (hex2int(c) % 2) == 0;
+		even = (hex2int(c) % 2) == 0;
 
-		if (do_paint) {
-			if (i < 5) {
-				draw_rectangle(img, 2 * cell + margin, i * cell + margin, cell, cell, foreground, opts, do_paint);
-			} else if (i < 10) {
-				draw_rectangle(img, 1 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, do_paint);
-				draw_rectangle(img, 3 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, do_paint);
-			} else if (i < 15) {
-				draw_rectangle(img, 0 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, do_paint);
-				draw_rectangle(img, 4 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, do_paint);
-			}
+		if (even)
+			color = foreground;
+		else
+			color = background;
+
+		if (i < 5) {
+			draw_part(context, 2 * cell + margin, i * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
+		} else if (i < 10) {
+			draw_part(context, 1 * cell + margin, (i - 5) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
+			draw_part(context, 3 * cell + margin, (i - 5) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
+		} else if (i < 15) {
+			draw_part(context, 0 * cell + margin, (i - 10) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
+			draw_part(context, 4 * cell + margin, (i - 10) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
 		}
 	}
 }
@@ -214,28 +188,32 @@ static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 identicon_options_t *new_default_identicon_options() {
 	identicon_options_t *opts = malloc(sizeof(identicon_options_t));
 
-	memset(opts->str, 0, IDENTICON_MAX_STRING_LENGTH);
-	memset(opts->salt, 0, IDENTICON_MAX_SALT_LENGTH);
+	memset(opts->str, 0, MAX_STRING_LENGTH);
+	memset(opts->salt, 0, MAX_SALT_LENGTH);
 	opts->size = 64;
 	opts->margin = 0.08;
 	opts->transparent = true;
 	opts->stroke = true;
-	opts->stroke_size = 1;
 
 	return opts;
 }
 
-uint32_t new_identicon_png(identicon_options_t *opts, char *filename) {
-	unsigned char *img = NULL;
-	uint32_t err;
+cairo_t *new_identicon_context(identicon_options_t *opts) {
+	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, opts->size, opts->size);
+	cairo_t *context = cairo_create(surface);
+	draw_identicon(context, opts);
+	cairo_save(context);
 
-	if ((opts == NULL) || (filename == NULL))
-		return -1;
+	return context;
+}
 
-	img = malloc(sizeof(unsigned char) * opts->size * opts->size * 4);
-	draw_identicon(img, opts);
-	err = lodepng_encode32_file(filename, img, opts->size, opts->size);
-	free(img);
+void new_identicon_png(identicon_options_t *opts, char *file) {
+	if (file == NULL)
+		return;
 
-	return err;
+	cairo_t *context = new_identicon_context(opts);
+	cairo_surface_write_to_png(cairo_get_target(context), file);
+
+	while (cairo_get_reference_count(context) > 0)
+		cairo_destroy(context);
 }

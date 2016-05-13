@@ -121,32 +121,38 @@ static unsigned char *sha512sum(unsigned char *str, unsigned char *salt) {
 	return hash;
 }
 
-static void draw_part(cairo_t *context, double x, double y, double width, double height, identicon_RGB_t color, bool transparent, bool stroke, bool even) {
-	if (transparent && !even)
+static void draw_rectangle(cairo_t *context, double x, double y, double width, double height,
+		identicon_RGB_t color, identicon_options_t *opts, bool paint_fg) {
+	if ((context == NULL) || (opts == NULL))
+		return;
+
+	if (opts->transparent && !paint_fg)
 		return;
 
 	cairo_set_source_rgba(context, color.red, color.green, color.blue, 1);
 	cairo_rectangle(context, x, y, width, height);
-	cairo_fill(context);
-
-	if (stroke && even) {
-		cairo_set_source_rgba(context, color.red, color.green, color.blue, 1);
-		cairo_rectangle(context, x, y, width, height);
-		cairo_stroke(context);
+	if (opts->stroke && paint_fg) {
+		cairo_set_line_width(context, (double)opts->stroke_size);
+		cairo_stroke_preserve(context);
 	}
+	cairo_fill(context);
 }
 
 static void draw_identicon(cairo_t *context, identicon_options_t *opts) {
-	bool even;
 	int i;
 	double h;
-	unsigned char *hash;
+	unsigned char c[2];
+	unsigned char *hash = NULL;
 	double base_margin = floor(opts->size * opts->margin);
 	double cell = floor((opts->size - (base_margin * 2)) / 5);
 	double margin = floor((opts->size - (cell * 5)) / 2);
-	identicon_RGB_t background, foreground, color;
+	identicon_RGB_t background, foreground;
+
+	if ((context == NULL) || (opts == NULL))
+		return;
 
 	hash = sha512sum((unsigned char *)opts->str, (unsigned char *)opts->salt);
+	memset(c, 0, 2);
 
 	// Background color
 	background.red = 240.0 / 255;
@@ -154,7 +160,7 @@ static void draw_identicon(cairo_t *context, identicon_options_t *opts) {
 	background.blue = 240.0 / 255;
 
 	if (!opts->transparent)
-		draw_part(context, 0, 0, opts->size, opts->size, background, opts->transparent, opts->stroke, false);
+		draw_rectangle(context, 0, 0, opts->size, opts->size, background, opts, false);
 
 	// Foreground color
 	h = (double)hex2int(&hash[strlen((char *)hash) - 7]);
@@ -163,24 +169,18 @@ static void draw_identicon(cairo_t *context, identicon_options_t *opts) {
 	// The first 15 characters of the hash control the pixels (even/odd)
 	// they are drawn down the middle first, then mirrored outwards
 	for (i = 0; i < 15; i++) {
-		unsigned char c[2];
 		c[0] = hash[i];
-		c[1] = '\0';
-		even = (hex2int(c) % 2) == 0;
 
-		if (even)
-			color = foreground;
-		else
-			color = background;
-
-		if (i < 5) {
-			draw_part(context, 2 * cell + margin, i * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
-		} else if (i < 10) {
-			draw_part(context, 1 * cell + margin, (i - 5) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
-			draw_part(context, 3 * cell + margin, (i - 5) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
-		} else if (i < 15) {
-			draw_part(context, 0 * cell + margin, (i - 10) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
-			draw_part(context, 4 * cell + margin, (i - 10) * cell + margin, cell, cell, color, opts->transparent, opts->stroke, even);
+		if ((hex2int(c) % 2) == 0) {
+			if (i < 5) {
+				draw_rectangle(context, 2 * cell + margin, i * cell + margin, cell, cell, foreground, opts, true);
+			} else if (i < 10) {
+				draw_rectangle(context, 1 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, true);
+				draw_rectangle(context, 3 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, true);
+			} else if (i < 15) {
+				draw_rectangle(context, 0 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, true);
+				draw_rectangle(context, 4 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, true);
+			}
 		}
 	}
 }
@@ -188,17 +188,21 @@ static void draw_identicon(cairo_t *context, identicon_options_t *opts) {
 identicon_options_t *new_default_identicon_options() {
 	identicon_options_t *opts = malloc(sizeof(identicon_options_t));
 
-	memset(opts->str, 0, MAX_STRING_LENGTH);
-	memset(opts->salt, 0, MAX_SALT_LENGTH);
+	memset(opts->str, 0, IDENTICON_MAX_STRING_LENGTH);
+	memset(opts->salt, 0, IDENTICON_MAX_SALT_LENGTH);
 	opts->size = 64;
 	opts->margin = 0.08;
 	opts->transparent = true;
 	opts->stroke = true;
+	opts->stroke_size = 2;
 
 	return opts;
 }
 
 cairo_t *new_identicon_context(identicon_options_t *opts) {
+	if (opts == NULL)
+		return NULL;
+
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, opts->size, opts->size);
 	cairo_t *context = cairo_create(surface);
 	draw_identicon(context, opts);
@@ -207,12 +211,15 @@ cairo_t *new_identicon_context(identicon_options_t *opts) {
 	return context;
 }
 
-void new_identicon_png(identicon_options_t *opts, char *file) {
-	if (file == NULL)
+void new_identicon_png(identicon_options_t *opts, char *filename) {
+	if ((opts == NULL) || (filename == NULL))
 		return;
 
 	cairo_t *context = new_identicon_context(opts);
-	cairo_surface_write_to_png(cairo_get_target(context), file);
+	if (context == NULL)
+		return;
+
+	cairo_surface_write_to_png(cairo_get_target(context), filename);
 
 	while (cairo_get_reference_count(context) > 0)
 		cairo_destroy(context);

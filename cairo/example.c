@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-//#include <cairo.h>
 
 #include "identicon.h"
 
@@ -31,14 +30,14 @@ int main(int argc, char **argv) {
 		printf("Usage: %s string [salt] output.png\n", argv[0]);
 		return 1;
 	} else if (argc == 3) {
-		strncpy(opts->str, argv[1], strlen(argv[1]) % MAX_STRING_LENGTH);
-		opts->str[MAX_STRING_LENGTH-1] = '\0';
+		strncpy(opts->str, argv[1], strlen(argv[1]) % IDENTICON_MAX_STRING_LENGTH);
+		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
 		out_file = argv[2];
 	} else {
-		strncpy(opts->str, argv[1], strlen(argv[1]) % MAX_STRING_LENGTH);
-		opts->str[MAX_STRING_LENGTH-1] = '\0';
-		strncpy(opts->salt, argv[2], strlen(argv[2]) % MAX_SALT_LENGTH);
-		opts->salt[MAX_SALT_LENGTH-1] = '\0';
+		strncpy(opts->str, argv[1], strlen(argv[1]) % IDENTICON_MAX_STRING_LENGTH);
+		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
+		strncpy(opts->salt, argv[2], strlen(argv[2]) % IDENTICON_MAX_SALT_LENGTH);
+		opts->salt[IDENTICON_MAX_SALT_LENGTH-1] = '\0';
 		out_file = argv[3];
 	}
 	

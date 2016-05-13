@@ -19,11 +19,12 @@
 #ifndef IDENTICON_H
 #define IDENTICON_H
 
+#include <stdint.h>
 #include <stdbool.h>
 #include <cairo.h>
 
-#define MAX_STRING_LENGTH 4096
-#define MAX_SALT_LENGTH 1024
+#define IDENTICON_MAX_STRING_LENGTH 4096
+#define IDENTICON_MAX_SALT_LENGTH 1024
 
 
 typedef struct identicon_RGB_t {
@@ -33,17 +34,18 @@ typedef struct identicon_RGB_t {
 } identicon_RGB_t;
 
 typedef struct identicon_options_t {
-	char str[MAX_STRING_LENGTH];
-	char salt[MAX_SALT_LENGTH];
-	int size;
+	char str[IDENTICON_MAX_STRING_LENGTH];
+	char salt[IDENTICON_MAX_SALT_LENGTH];
+	uint32_t size;
 	double margin;
 	bool transparent;
 	bool stroke;
+	uint32_t stroke_size;
 } identicon_options_t;
 
 
 identicon_options_t *new_default_identicon_options();
 cairo_t *new_identicon_context(identicon_options_t *opts);
-void new_identicon_png(identicon_options_t *opts, char *file);
+void new_identicon_png(identicon_options_t *opts, char *filename);
 
 #endif

@@ -163,10 +163,10 @@ static void draw_rectangle(unsigned char *img, uint32_t x, uint32_t y, uint32_t 
 }
 
 static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
-	bool do_paint;
 	int i;
 	double h;
-	unsigned char *hash;
+	unsigned char c[2];
+	unsigned char *hash = NULL;
 	double base_margin = floor(opts->size * opts->margin);
 	double cell = floor((opts->size - (base_margin * 2)) / 5);
 	double margin = floor((opts->size - (cell * 5)) / 2);
@@ -176,6 +176,7 @@ static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 		return;
 
 	hash = sha512sum((unsigned char *)opts->str, (unsigned char *)opts->salt);
+	memset(c, 0, 2);
 
 	// Background color
 	background.red = 240;
@@ -192,20 +193,17 @@ static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 	// The first 15 characters of the hash control the pixels (even/odd)
 	// they are drawn down the middle first, then mirrored outwards
 	for (i = 0; i < 15; i++) {
-		unsigned char c[2];
 		c[0] = hash[i];
-		c[1] = '\0';
-		do_paint = (hex2int(c) % 2) == 0;
 
-		if (do_paint) {
+		if ((hex2int(c) % 2) == 0) {
 			if (i < 5) {
-				draw_rectangle(img, 2 * cell + margin, i * cell + margin, cell, cell, foreground, opts, do_paint);
+				draw_rectangle(img, 2 * cell + margin, i * cell + margin, cell, cell, foreground, opts, true);
 			} else if (i < 10) {
-				draw_rectangle(img, 1 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, do_paint);
-				draw_rectangle(img, 3 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, do_paint);
+				draw_rectangle(img, 1 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, true);
+				draw_rectangle(img, 3 * cell + margin, (i - 5) * cell + margin, cell, cell, foreground, opts, true);
 			} else if (i < 15) {
-				draw_rectangle(img, 0 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, do_paint);
-				draw_rectangle(img, 4 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, do_paint);
+				draw_rectangle(img, 0 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, true);
+				draw_rectangle(img, 4 * cell + margin, (i - 10) * cell + margin, cell, cell, foreground, opts, true);
 			}
 		}
 	}

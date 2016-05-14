@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// SHA512 functions
 #if defined(USE_SODIUM)
 #include <sodium.h>
 #elif defined(USE_OPENSSL)
@@ -38,10 +39,19 @@
 #include "sha512.h"
 #endif
 
+// PNG functions
+#if (defined USE_STB)
+#ifndef  STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
+#include "stb_image_write.h"
+#else
 #ifndef LODEPNG_NO_COMPILE_CPP
 #define LODEPNG_NO_COMPILE_CPP
 #endif
 #include "lodepng.h"
+#endif
+
 #include "identicon.h"
 
 
@@ -60,7 +70,6 @@ static identicon_RGB_t hsl2rgb(double h, double s, double b) {
 	color.red = floor(hsl[(int)h % 6] * 255);
 	color.green = floor(hsl[((int)h|16) % 6] * 255);
 	color.blue = floor(hsl[((int)h|8) % 6] * 255);
-
 
 	return color;
 }
@@ -176,6 +185,10 @@ static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 		return;
 
 	hash = sha512sum((unsigned char *)opts->str, (unsigned char *)opts->salt);
+
+	if (hash == NULL)
+		return;
+
 	memset(c, 0, 2);
 
 	// Background color
@@ -223,17 +236,47 @@ identicon_options_t *new_default_identicon_options() {
 	return opts;
 }
 
-uint32_t new_identicon_png(identicon_options_t *opts, char *filename) {
+unsigned char *new_identicon(identicon_options_t *opts) {
 	unsigned char *img = NULL;
-	uint32_t err;
 
-	if ((opts == NULL) || (filename == NULL))
-		return -1;
+	if (opts == NULL)
+		return NULL;
 
 	img = malloc(sizeof(unsigned char) * opts->size * opts->size * 4);
 	draw_identicon(img, opts);
+
+	return img;
+}
+
+int identicon_write_png(char *filename, unsigned char *img, identicon_options_t *opts) {
+	int err;
+
+	if ((filename == NULL) || (img == NULL) || (opts == NULL))
+		return -2;
+
+#if defined(USE_STB)
+	err = stbi_write_png(filename, opts->size, opts->size, 4, img, opts->size * 4) - 1;
+#else
 	err = lodepng_encode32_file(filename, img, opts->size, opts->size);
-	free(img);
+#endif
 
 	return err;
+}
+
+unsigned char *new_identicon_write_png(char *filename, identicon_options_t *opts) {
+	unsigned char *img = NULL;
+	int err;
+
+	if ((filename == NULL) || (opts == NULL))
+		return NULL;
+
+	img = new_identicon(opts);
+	err = identicon_write_png(filename, img, opts);
+
+	if (err) {
+		free(img);
+		return NULL;
+	}
+
+	return img;
 }

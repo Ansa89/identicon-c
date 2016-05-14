@@ -44,6 +44,8 @@ typedef struct identicon_options_t {
 
 
 identicon_options_t *new_default_identicon_options();
-uint32_t new_identicon_png(identicon_options_t *opts, char *filename);
+unsigned char *new_identicon(identicon_options_t *opts);
+int identicon_write_png(char *filename, unsigned char *img, identicon_options_t *opts);
+unsigned char *new_identicon_write_png(char *filename, identicon_options_t *opts);
 
 #endif

@@ -9,7 +9,7 @@ PC_FILE = $(BASE_NAME).pc
 HEADER = identicon.h
 TARGET_ONLY = NO
 
-SOURCES = identicon.c libs/lodepng.c
+SOURCES = identicon.c
 OBJS = $(SOURCES:.c=.o)
 
 CFLAGS = -Wall -Wextra -fPIC -Ilibs -DLODEPNG_NO_COMPILE_CPP
@@ -24,6 +24,13 @@ else ifeq ($(USE_OPENSSL), 1)
     CFLAGS += -DUSE_OPENSSL
 else
     SOURCES += libs/sha512.c
+endif
+
+# Check what png library we will use
+ifeq ($(USE_STB), 1)
+    CFLAGS += -DUSE_STB
+else
+    SOURCES += libs/lodepng.c
 endif
 
 # Check if we can build identicon

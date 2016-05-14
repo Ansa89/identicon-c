@@ -22,7 +22,9 @@
 #include "identicon.h"
 
 int main(int argc, char **argv) {
-	char *out_file = NULL;
+	unsigned char *img = NULL;
+	char *filename = NULL;
+	int err;
 	identicon_options_t *opts = new_default_identicon_options();
 
 	if (argc < 3) {
@@ -31,20 +33,26 @@ int main(int argc, char **argv) {
 	} else if (argc == 3) {
 		strncpy(opts->str, argv[1], strlen(argv[1]) % IDENTICON_MAX_STRING_LENGTH);
 		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
-		out_file = argv[2];
+		filename = argv[2];
 	} else {
 		strncpy(opts->str, argv[1], strlen(argv[1]) % IDENTICON_MAX_STRING_LENGTH);
 		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
 		strncpy(opts->salt, argv[2], strlen(argv[2]) % IDENTICON_MAX_SALT_LENGTH);
 		opts->salt[IDENTICON_MAX_SALT_LENGTH-1] = '\0';
-		out_file = argv[3];
+		filename = argv[3];
 	}
 	
 	opts->transparent = false;
+	opts->stroke = false;
 	opts->size = 256;
 
-	new_identicon_png(opts, out_file);
+	img = new_identicon(opts);
+	err = identicon_write_png(filename, img, opts);
 	free(opts);
+	free(img);
+
+	if (err)
+		return 1;
 
 	return 0;
 }

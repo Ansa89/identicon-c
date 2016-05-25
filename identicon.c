@@ -55,6 +55,15 @@
 #include "identicon.h"
 
 
+/**
+ * Convert "Hue Saturation Lightness" to "Red Green Blue" color space.
+ *
+ * @param[in] h The hue value.
+ * @param[in] s The saturation value.
+ * @param[in] l The lightness value.
+ *
+ * @return A variable containig red, green and blue values.
+ */
 static identicon_RGB_t hsl2rgb(double h, double s, double b) {
 	double hsl[6];
 	identicon_RGB_t color;
@@ -75,6 +84,13 @@ static identicon_RGB_t hsl2rgb(double h, double s, double b) {
 }
 
 
+/**
+ * Convert a bytes array to its hexadecimal representation and then to its decimal representation.
+ *
+ * @param[in] str The array of bytes.
+ *
+ * @return The decimal representation of input bytes array or 0 if an error occurred.
+ */
 static unsigned long hex2int(unsigned char *str) {
 	unsigned char *buf = NULL;
 	unsigned long ret;
@@ -100,6 +116,15 @@ static unsigned long hex2int(unsigned char *str) {
 	return ret;
 }
 
+
+/**
+ * Calculate SHA512.
+ *
+ * @param[in] str  The string of which calculating SHA512.
+ * @param[in] salt An (optional) additional string appended to the main string.
+ *
+ * @return The SHA512 of the string (plus the optional salt) or NULL if an error occurred.
+ */
 static unsigned char *sha512sum(unsigned char *str, unsigned char *salt) {
 	unsigned char *hash = NULL;
 
@@ -135,6 +160,19 @@ static unsigned char *sha512sum(unsigned char *str, unsigned char *salt) {
 	return hash;
 }
 
+
+/**
+ * Draw a rectangular portion of the final image.
+ *
+ * @param[in,out] img      The image (already allocated).
+ * @param[in]     x        The rectangle top-left corner X coordinate.
+ * @param[in]     y        The rectangle top-left corner Y coordinate.
+ * @param[in]     width    The rectangle width.
+ * @param[in]     height   The rectangle height.
+ * @param[in]     color    The color used to paint (as RGB).
+ * @param[in]     opts     The identicon options.
+ * @param[in]     paint_fg True if we are painting the foreground.
+ */
 static void draw_rectangle(unsigned char *img, uint32_t x, uint32_t y, uint32_t width, uint32_t height,
 		identicon_RGB_t color, identicon_options_t *opts, bool paint_fg) {
 	uint32_t i, j, idx;
@@ -171,6 +209,13 @@ static void draw_rectangle(unsigned char *img, uint32_t x, uint32_t y, uint32_t 
 	}
 }
 
+
+/**
+ * Draw the image.
+ *
+ * @param[in,out] img  The image (already allocated).
+ * @param[in]     opts The identicon options.
+ */
 static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 	int i;
 	double h;
@@ -222,20 +267,36 @@ static void draw_identicon(unsigned char *img, identicon_options_t *opts) {
 	}
 }
 
+
+/**
+ * Create a new set of default options.
+ *
+ * @return A new variable containing the default options or NULL if an error occurred.
+ */
 identicon_options_t *new_default_identicon_options() {
 	identicon_options_t *opts = malloc(sizeof(identicon_options_t));
 
-	memset(opts->str, 0, IDENTICON_MAX_STRING_LENGTH);
-	memset(opts->salt, 0, IDENTICON_MAX_SALT_LENGTH);
-	opts->size = 64;
-	opts->margin = 0.08;
-	opts->transparent = true;
-	opts->stroke = true;
-	opts->stroke_size = 1;
+	if (opts != NULL) {
+		memset(opts->str, 0, IDENTICON_MAX_STRING_LENGTH);
+		memset(opts->salt, 0, IDENTICON_MAX_SALT_LENGTH);
+		opts->size = 64;
+		opts->margin = 0.08;
+		opts->transparent = true;
+		opts->stroke = true;
+		opts->stroke_size = 1;
+	}
 
 	return opts;
 }
 
+
+/**
+ * Create a new identicon.
+ *
+ * @param[in] opts The identicon options.
+ *
+ * @return A new variable containing the identicon or NULL if an error occurred.
+ */
 unsigned char *new_identicon(identicon_options_t *opts) {
 	unsigned char *img = NULL;
 
@@ -248,6 +309,16 @@ unsigned char *new_identicon(identicon_options_t *opts) {
 	return img;
 }
 
+
+/**
+ * Write a PNG file containing the identicon image.
+ *
+ * @param[in] filename The PNG file name.
+ * @param[in] img      The image.
+ * @param[in] opts     The identicon options.
+ *
+ * @return 0 on success.
+ */
 int identicon_write_png(char *filename, unsigned char *img, identicon_options_t *opts) {
 	int err;
 
@@ -263,6 +334,15 @@ int identicon_write_png(char *filename, unsigned char *img, identicon_options_t 
 	return err;
 }
 
+
+/**
+ * Create a new identicon and write it to a PNG file.
+ *
+ * @param[in] filename The PNG file name.
+ * @param[in] opts     The identicon options.
+ *
+ * @return A new variable containing the identicon or NULL if an error occurred.
+ */
 unsigned char *new_identicon_write_png(char *filename, identicon_options_t *opts) {
 	unsigned char *img = NULL;
 	int err;

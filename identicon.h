@@ -26,12 +26,14 @@
 #define IDENTICON_MAX_SALT_LENGTH 1024
 
 
+// RGB color space
 typedef struct identicon_RGB_t {
 	uint8_t red;
 	uint8_t green;
 	uint8_t blue;
 } identicon_RGB_t;
 
+// Identicon options
 typedef struct identicon_options_t {
 	char str[IDENTICON_MAX_STRING_LENGTH];
 	char salt[IDENTICON_MAX_SALT_LENGTH];
@@ -43,9 +45,16 @@ typedef struct identicon_options_t {
 } identicon_options_t;
 
 
+// Create a new set of default options
 identicon_options_t *new_default_identicon_options();
+
+// Create a new identicon
 unsigned char *new_identicon(identicon_options_t *opts);
+
+// Write a PNG file containing the identicon image
 int identicon_write_png(char *filename, unsigned char *img, identicon_options_t *opts);
+
+// Create a new identicon and write it to a PNG file
 unsigned char *new_identicon_write_png(char *filename, identicon_options_t *opts);
 
 #endif

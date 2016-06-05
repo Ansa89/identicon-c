@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "identicon.h"
+#include "identicon-c.h"
 
 int main(int argc, char **argv) {
 	unsigned char *img = NULL;
@@ -27,20 +27,29 @@ int main(int argc, char **argv) {
 	int err;
 	identicon_options_t *opts = new_default_identicon_options();
 
-	if (argc < 3) {
-		printf("Usage: %s string [salt] output.png\n", argv[0]);
+	if (argc < 4) {
+		printf("Usage: %s <md5|sha1|sha256|sha512> string [salt] output.png\n", argv[0]);
 		return 1;
-	} else if (argc == 3) {
-		strncpy(opts->str, argv[1], strlen(argv[1]) % IDENTICON_MAX_STRING_LENGTH);
+	} else if (argc == 4) {
+		strncpy(opts->str, argv[2], strlen(argv[2]) % IDENTICON_MAX_STRING_LENGTH);
 		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
-		filename = argv[2];
-	} else {
-		strncpy(opts->str, argv[1], strlen(argv[1]) % IDENTICON_MAX_STRING_LENGTH);
-		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
-		strncpy(opts->salt, argv[2], strlen(argv[2]) % IDENTICON_MAX_SALT_LENGTH);
-		opts->salt[IDENTICON_MAX_SALT_LENGTH-1] = '\0';
 		filename = argv[3];
+	} else {
+		strncpy(opts->str, argv[2], strlen(argv[2]) % IDENTICON_MAX_STRING_LENGTH);
+		opts->str[IDENTICON_MAX_STRING_LENGTH-1] = '\0';
+		strncpy(opts->salt, argv[3], strlen(argv[3]) % IDENTICON_MAX_SALT_LENGTH);
+		opts->salt[IDENTICON_MAX_SALT_LENGTH-1] = '\0';
+		filename = argv[4];
 	}
+
+	if (!strcmp(argv[1], "sha1"))
+		opts->hash_type = IDENTICON_HASH_SHA1;
+	else if (!strcmp(argv[1], "sha256"))
+		opts->hash_type = IDENTICON_HASH_SHA256;
+	else if (!strcmp(argv[1], "sha512"))
+		opts->hash_type = IDENTICON_HASH_SHA512;
+	else
+		opts->hash_type = IDENTICON_HASH_MD5;
 	
 	opts->transparent = false;
 	opts->stroke = false;

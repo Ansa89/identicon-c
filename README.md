@@ -5,19 +5,21 @@ The original algorithm for identicon creation is from [identicon.js](https://git
 
 
 ### Compiling
-You can choose from 3 different libraries to calculate SHA512:
-* [libs/sha512.c](libs/sha512.c) is from [coreutils](http://www.gnu.org/s/coreutils) and doesn't need any external library (this is the default)
-* [libsodium](https://github.com/jedisct1/libsodium) (`make USE_SODIUM=1`)
+You can choose from 3 different libraries to calculate the hash:
+* [libs/md5.c](libs/md5.c) [libs/sha1.c](libs/sha1.c) [libs/sha256.c](libs/sha256.c) [libs/sha512.c](libs/sha512.c) are from [coreutils](http://www.gnu.org/s/coreutils) and don't need any additional dependency (this is the default)
+* [libsodium](https://github.com/jedisct1/libsodium)<sup>1</sup> (`make USE_SODIUM=1`)
 * [openssl](https://www.openssl.org/) (`make USE_OPENSSL=1`)
+
+<sup>1</sup> _WARNING_: libsodium doesn't have functions to calculate MD5 and SHA1, so I used `crypto_generichash` which produces a different hash compared to coreutils and openssl counterparts (and thus a different identicon will be created).
 
 You can choose from 2 different libraries to write PNGs:
 * [lodepng](https://github.com/lvandeve/lodepng) (this is the default)
 * [stb](https://github.com/nothings/stb) (`make USE_STB=1`)
 
-Both libraries don't need any external library.
+Both libraries don't need any additional dependency.
 
 The [cairo](cairo) directory contains a cairo based version, but consider it more like a proof of concept.
 
 
 ### Example code
-You can build example code with `make example` and then run `./example some_string file.png` to create your identicon.
+You can build example code with `make example` and then run `./example` to see what options it needs.

@@ -23,7 +23,7 @@ else ifeq ($(USE_OPENSSL), 1)
     DEPS += openssl
     CFLAGS += -DUSE_OPENSSL
 else
-    SOURCES += libs/sha512.c
+    SOURCES += libs/md5.c libs/sha1.c libs/sha256.c libs/sha512.c
 endif
 
 # Check what png library we will use

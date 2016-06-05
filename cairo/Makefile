@@ -1,4 +1,4 @@
-BASE_NAME = libidenticon
+BASE_NAME = libidenticon-c
 VERSION = 0.0.0
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -6,10 +6,10 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 STATIC_LIB = $(BASE_NAME).a
 PC_FILE = $(BASE_NAME).pc
-HEADER = identicon.h
+HEADER = identicon-c.h
 TARGET_ONLY = NO
 
-SOURCES = identicon.c
+SOURCES = identicon-c.c
 OBJS = $(SOURCES:.c=.o)
 DEPS = cairo
 
@@ -24,7 +24,7 @@ else ifeq ($(USE_OPENSSL), 1)
     DEPS += openssl
     CFLAGS += -DUSE_OPENSSL
 else
-    SOURCES += sha512.c
+    SOURCES += md5.c sha1.c sha256.c sha512.c
 endif
 
 # Check if we can build identicon
@@ -91,7 +91,7 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 	@echo "Installing $(HEADER)"
 	@install -D -m 0644 $(HEADER) $(abspath $(DESTDIR)/$(INCLUDEDIR)/$(HEADER))
 	@echo "Installing $(PC_FILE)"
-	@install -D -m 0644 $(PC_FILE) $(abspath $(DESTDIR)/$(LIBDIR)/pkgconfig/$(PC_FILE))
+	@install -D -m 0644 $(PC_FILE) $(abspath $(DESTDIR)/$(PREFIX)/share/pkgconfig/$(PC_FILE))
 	@if [ "$(NO_STATIC)" != "1" -a -e "$(STATIC_LIB)" ]; then \
 		echo "Installing $(STATIC_LIB)" ;\
 		install -m 0644 $(STATIC_LIB) $(abspath $(DESTDIR)/$(LIBDIR)/$(STATIC_LIB)) ;\
@@ -101,7 +101,7 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 		ln -sf $(TARGET) $(SHARED_LIB) ;\
 		ln -sf $(SHARED_LIB) $(BASE_NAME).$(SHARED_EXT) ;\
 	fi
-	@pc_file=$(abspath $(DESTDIR)/$(LIBDIR)/pkgconfig/$(PC_FILE)) ;\
+	@pc_file=$(abspath $(DESTDIR)/$(PREFIX)/share/pkgconfig/$(PC_FILE)) ;\
 	sed -e 's:__PREFIX__:$(abspath $(PREFIX)):g' $$pc_file > temp_file && mv temp_file $$pc_file ;\
 	sed -e 's:__LIBDIR__:$(abspath $(LIBDIR)):g' $$pc_file > temp_file && mv temp_file $$pc_file ;\
 	sed -e 's:__INCLUDEDIR__:$(abspath $(INCLUDEDIR)):g' $$pc_file > temp_file && mv temp_file $$pc_file ;\

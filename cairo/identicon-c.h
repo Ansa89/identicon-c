@@ -33,6 +33,13 @@ typedef struct identicon_RGB_t {
 	double blue;
 } identicon_RGB_t;
 
+typedef enum identicon_hash_t {
+	IDENTICON_HASH_MD5,
+	IDENTICON_HASH_SHA1,
+	IDENTICON_HASH_SHA256,
+	IDENTICON_HASH_SHA512,
+} identicon_hash_t;
+
 typedef struct identicon_options_t {
 	char str[IDENTICON_MAX_STRING_LENGTH];
 	char salt[IDENTICON_MAX_SALT_LENGTH];
@@ -41,6 +48,7 @@ typedef struct identicon_options_t {
 	bool transparent;
 	bool stroke;
 	uint32_t stroke_size;
+	identicon_hash_t hash_type;
 } identicon_options_t;
 
 

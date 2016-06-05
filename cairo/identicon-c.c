@@ -30,15 +30,20 @@
 #include <stdbool.h>
 #include <cairo.h>
 
+// Hash functions
 #if defined(USE_SODIUM)
 #include <sodium.h>
 #elif defined(USE_OPENSSL)
+#include <openssl/md5.h>
 #include <openssl/sha.h>
 #else
+#include "md5.h"
+#include "sha1.h"
+#include "sha256.h"
 #include "sha512.h"
 #endif
 
-#include "identicon.h"
+#include "identicon-c.h"
 
 
 static identicon_RGB_t hsl2rgb(double h, double s, double b) {
@@ -86,37 +91,127 @@ static unsigned long hex2int(unsigned char *str) {
 	return ret;
 }
 
-static unsigned char *sha512sum(unsigned char *str, unsigned char *salt) {
+static unsigned char *checksum(unsigned char *str, unsigned char *salt, identicon_hash_t hash_type) {
 	unsigned char *hash = NULL;
 
 	if (str == NULL)
 		return NULL;
 
+	switch (hash_type) {
+		case IDENTICON_HASH_MD5: {
 #if defined(USE_SODIUM)
-	crypto_hash_sha512_state state;
-	hash = malloc(sizeof(unsigned char) * crypto_hash_sha512_BYTES);
-	crypto_hash_sha512_init(&state);
-	crypto_hash_sha512_update(&state, str, strlen((char *)str));
-	if (salt != NULL)
-		crypto_hash_sha512_update(&state, salt, strlen((char *)salt));
-	crypto_hash_sha512_final(&state, hash);
+			crypto_generichash_state state;
+			hash = malloc(sizeof(unsigned char) * 16);
+			crypto_generichash_init(&state, NULL, 0, 16);
+			crypto_generichash_update(&state, str, strlen((char *)str));
+			if (salt != NULL)
+				crypto_generichash_update(&state, salt, strlen((char *)salt));
+			crypto_generichash_final(&state, hash, 16);
 #elif defined(USE_OPENSSL)
-	SHA512_CTX ctx;
-	hash = malloc(sizeof(unsigned char) * SHA512_DIGEST_LENGTH);
-	SHA512_Init(&ctx);
-	SHA512_Update(&ctx, str, strlen((char *)str));
-	if (salt != NULL)
-		SHA512_Update(&ctx, salt, strlen((char *)salt));
-	SHA512_Final(hash, &ctx);
+			MD5_CTX ctx;
+			hash = malloc(sizeof(unsigned char) * MD5_DIGEST_LENGTH);
+			MD5_Init(&ctx);
+			MD5_Update(&ctx, str, strlen((char *)str));
+			if (salt != NULL)
+				MD5_Update(&ctx, salt, strlen((char *)salt));
+			MD5_Final(hash, &ctx);
 #else
-	struct sha512_ctx ctx;
-	hash = malloc(sizeof(unsigned char) * SHA512_DIGEST_SIZE);
-	sha512_init_ctx(&ctx);
-	sha512_process_bytes(str, strlen((char *)str), &ctx);
-	if (salt != NULL)
-		sha512_process_bytes(salt, strlen((char *)salt), &ctx);
-	sha512_finish_ctx(&ctx, hash);
+			struct md5_ctx ctx;
+			hash = malloc(sizeof(unsigned char) * MD5_DIGEST_SIZE);
+			md5_init_ctx(&ctx);
+			md5_process_bytes(str, strlen((char *)str), &ctx);
+			if (salt != NULL)
+				md5_process_bytes(salt, strlen((char *)salt), &ctx);
+			md5_finish_ctx(&ctx, hash);
 #endif
+			break;
+		}
+		case IDENTICON_HASH_SHA1: {
+#if defined(USE_SODIUM)
+			crypto_generichash_state state;
+			hash = malloc(sizeof(unsigned char) * 20);
+			crypto_generichash_init(&state, NULL, 0, 20);
+			crypto_generichash_update(&state, str, strlen((char *)str));
+			if (salt != NULL)
+				crypto_generichash_update(&state, salt, strlen((char *)salt));
+			crypto_generichash_final(&state, hash, 20);
+#elif defined(USE_OPENSSL)
+			SHA_CTX ctx;
+			hash = malloc(sizeof(unsigned char) * SHA_DIGEST_LENGTH);
+			SHA1_Init(&ctx);
+			SHA1_Update(&ctx, str, strlen((char *)str));
+			if (salt != NULL)
+				SHA1_Update(&ctx, salt, strlen((char *)salt));
+			SHA1_Final(hash, &ctx);
+#else
+			struct sha1_ctx ctx;
+			hash = malloc(sizeof(unsigned char) * SHA1_DIGEST_SIZE);
+			sha1_init_ctx(&ctx);
+			sha1_process_bytes(str, strlen((char *)str), &ctx);
+			if (salt != NULL)
+				sha1_process_bytes(salt, strlen((char *)salt), &ctx);
+			sha1_finish_ctx(&ctx, hash);
+#endif
+			break;
+		}
+		case IDENTICON_HASH_SHA256: {
+#if defined(USE_SODIUM)
+			crypto_hash_sha256_state state;
+			hash = malloc(sizeof(unsigned char) * crypto_hash_sha256_BYTES);
+			crypto_hash_sha256_init(&state);
+			crypto_hash_sha256_update(&state, str, strlen((char *)str));
+			if (salt != NULL)
+				crypto_hash_sha256_update(&state, salt, strlen((char *)salt));
+			crypto_hash_sha256_final(&state, hash);
+#elif defined(USE_OPENSSL)
+			SHA256_CTX ctx;
+			hash = malloc(sizeof(unsigned char) * SHA256_DIGEST_LENGTH);
+			SHA256_Init(&ctx);
+			SHA256_Update(&ctx, str, strlen((char *)str));
+			if (salt != NULL)
+				SHA256_Update(&ctx, salt, strlen((char *)salt));
+			SHA256_Final(hash, &ctx);
+#else
+			struct sha256_ctx ctx;
+			hash = malloc(sizeof(unsigned char) * SHA256_DIGEST_SIZE);
+			sha256_init_ctx(&ctx);
+			sha256_process_bytes(str, strlen((char *)str), &ctx);
+			if (salt != NULL)
+				sha256_process_bytes(salt, strlen((char *)salt), &ctx);
+			sha256_finish_ctx(&ctx, hash);
+#endif
+			break;
+		}
+		case IDENTICON_HASH_SHA512: {
+#if defined(USE_SODIUM)
+			crypto_hash_sha512_state state;
+			hash = malloc(sizeof(unsigned char) * crypto_hash_sha512_BYTES);
+			crypto_hash_sha512_init(&state);
+			crypto_hash_sha512_update(&state, str, strlen((char *)str));
+			if (salt != NULL)
+				crypto_hash_sha512_update(&state, salt, strlen((char *)salt));
+			crypto_hash_sha512_final(&state, hash);
+#elif defined(USE_OPENSSL)
+			SHA512_CTX ctx;
+			hash = malloc(sizeof(unsigned char) * SHA512_DIGEST_LENGTH);
+			SHA512_Init(&ctx);
+			SHA512_Update(&ctx, str, strlen((char *)str));
+			if (salt != NULL)
+				SHA512_Update(&ctx, salt, strlen((char *)salt));
+			SHA512_Final(hash, &ctx);
+#else
+			struct sha512_ctx ctx;
+			hash = malloc(sizeof(unsigned char) * SHA512_DIGEST_SIZE);
+			sha512_init_ctx(&ctx);
+			sha512_process_bytes(str, strlen((char *)str), &ctx);
+			if (salt != NULL)
+				sha512_process_bytes(salt, strlen((char *)salt), &ctx);
+			sha512_finish_ctx(&ctx, hash);
+#endif
+			break;
+		}
+		default: break;
+	}
 
 	return hash;
 }
@@ -151,7 +246,11 @@ static void draw_identicon(cairo_t *context, identicon_options_t *opts) {
 	if ((context == NULL) || (opts == NULL))
 		return;
 
-	hash = sha512sum((unsigned char *)opts->str, (unsigned char *)opts->salt);
+	hash = checksum((unsigned char *)opts->str, (unsigned char *)opts->salt, opts->hash_type);
+
+	if (hash == NULL)
+		return;
+
 	memset(c, 0, 2);
 
 	// Background color

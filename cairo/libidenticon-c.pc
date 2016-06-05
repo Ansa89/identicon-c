@@ -2,10 +2,10 @@ prefix=__PREFIX__
 libdir=__LIBDIR__
 includedir=__INCLUDEDIR__
 
-Name: libidenticon
+Name: libidenticon-c
 Description: Library to create identicons from a text string
 Version: __VERSION__
 Requires.private: __LIBS__
-Libs: -L${libdir} -lidenticon
+Libs: -L${libdir} -lidenticon-c
 Libs.private: 
 Cflags: -I${includedir}

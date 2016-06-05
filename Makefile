@@ -1,4 +1,4 @@
-BASE_NAME = libidenticon
+BASE_NAME = libidenticon-c
 VERSION = 0.0.0
 PREFIX ?= /usr/local
 LIBDIR ?= $(PREFIX)/lib
@@ -6,13 +6,13 @@ INCLUDEDIR ?= $(PREFIX)/include
 
 STATIC_LIB = $(BASE_NAME).a
 PC_FILE = $(BASE_NAME).pc
-HEADER = identicon.h
+HEADER = identicon-c.h
 TARGET_ONLY = NO
 
-SOURCES = identicon.c
+SOURCES = identicon-c.c
 OBJS = $(SOURCES:.c=.o)
 
-CFLAGS = -Wall -Wextra -fPIC -Ilibs -DLODEPNG_NO_COMPILE_CPP
+CFLAGS = -Wall -Wextra -fPIC -Ilibs
 LDFLAGS = -shared -lm
 
 # Check what crypto library we will use
@@ -31,6 +31,7 @@ ifeq ($(USE_STB), 1)
     CFLAGS += -DUSE_STB
 else
     SOURCES += libs/lodepng.c
+    CFLAGS += -DLODEPNG_NO_COMPILE_CPP
 endif
 
 # Check if we can build identicon
@@ -41,7 +42,7 @@ ifneq ($(CHECK_DEPS), error)
     LDFLAGS += $(shell pkg-config --libs $(DEPS))
 else ifneq ($(MAKECMDGOALS), clean)
     MISSING_LIBS = $(shell for lib in $(DEPS) ; do if ! pkg-config --exists $$lib ; then echo $$lib ; fi ; done)
-    $(warning ERROR -- Cannot compile identicon)
+    $(warning ERROR -- Cannot compile identicon-c)
     $(warning ERROR -- You need these libraries)
     $(warning ERROR -- $(MISSING_LIBS))
     $(error ERROR)
@@ -99,7 +100,7 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 	@echo "Installing $(HEADER)"
 	@install -D -m 0644 $(HEADER) $(abspath $(DESTDIR)/$(INCLUDEDIR)/$(HEADER))
 	@echo "Installing $(PC_FILE)"
-	@install -D -m 0644 $(PC_FILE) $(abspath $(DESTDIR)/$(LIBDIR)/pkgconfig/$(PC_FILE))
+	@install -D -m 0644 $(PC_FILE) $(abspath $(DESTDIR)/$(PREFIX)/share/pkgconfig/$(PC_FILE))
 	@if [ "$(NO_STATIC)" != "1" -a -e "$(STATIC_LIB)" ]; then \
 		echo "Installing $(STATIC_LIB)" ;\
 		install -m 0644 $(STATIC_LIB) $(abspath $(DESTDIR)/$(LIBDIR)/$(STATIC_LIB)) ;\
@@ -109,7 +110,7 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 		ln -sf $(TARGET) $(SHARED_LIB) ;\
 		ln -sf $(SHARED_LIB) $(BASE_NAME).$(SHARED_EXT) ;\
 	fi
-	@pc_file=$(abspath $(DESTDIR)/$(LIBDIR)/pkgconfig/$(PC_FILE)) ;\
+	@pc_file=$(abspath $(DESTDIR)/$(PREFIX)/share/pkgconfig/$(PC_FILE)) ;\
 	sed -e 's:__PREFIX__:$(abspath $(PREFIX)):g' $$pc_file > temp_file && mv temp_file $$pc_file ;\
 	sed -e 's:__LIBDIR__:$(abspath $(LIBDIR)):g' $$pc_file > temp_file && mv temp_file $$pc_file ;\
 	sed -e 's:__INCLUDEDIR__:$(abspath $(INCLUDEDIR)):g' $$pc_file > temp_file && mv temp_file $$pc_file ;\

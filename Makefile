@@ -27,11 +27,16 @@ else
 endif
 
 # Check what png library we will use
-ifeq ($(USE_STB), 1)
+ifeq ($(MAKECMDGOALS), example)
+ifeq ($(USE_CAIRO), 1)
+    DEPS += cairo
+    CFLAGS += -DUSE_CAIRO
+else ifeq ($(USE_STB), 1)
     CFLAGS += -DUSE_STB
 else
     SOURCES += libs/lodepng.c
     CFLAGS += -DLODEPNG_NO_COMPILE_CPP
+endif
 endif
 
 # Check if we can build identicon

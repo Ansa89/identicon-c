@@ -19,12 +19,26 @@
 #include <stdio.h>
 #include <string.h>
 
+// PNG functions
+#if (defined USE_CAIRO)
+#include <cairo.h>
+#elif (defined USE_STB)
+#ifndef  STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
+#include "stb_image_write.h"
+#else
+#ifndef LODEPNG_NO_COMPILE_CPP
+#define LODEPNG_NO_COMPILE_CPP
+#endif
+#include "lodepng.h"
+#endif
+
 #include "identicon-c.h"
 
 int main(int argc, char **argv) {
 	unsigned char *img = NULL;
 	char *filename = NULL;
-	int err;
 	identicon_options_t *opts = new_default_identicon_options();
 
 	if (argc < 4) {
@@ -56,12 +70,31 @@ int main(int argc, char **argv) {
 	opts->size = 256;
 
 	img = new_identicon(opts);
-	err = identicon_write_png(filename, img, opts);
+
+	if (img != NULL) {
+#if defined(USE_CAIRO)
+		printf("Creating \"%s\" using Cairo.\n", filename);
+		cairo_surface_t *surface = cairo_image_surface_create_for_data(img, CAIRO_FORMAT_ARGB32,
+				opts->size, opts->size, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, opts->size));
+
+		if (cairo_surface_status(surface) == CAIRO_STATUS_SUCCESS) {
+			cairo_surface_flush(surface);
+			cairo_surface_write_to_png(surface, filename);
+
+			while (cairo_surface_get_reference_count(surface) > 0)
+				cairo_surface_destroy(surface);
+		}
+#elif defined(USE_STB)
+		printf("Creating \"%s\" using STB.\n", filename);
+		stbi_write_png(filename, opts->size, opts->size, 4, img, opts->size * 4);
+#else
+		printf("Creating \"%s\" using LodePNG.\n", filename);
+		lodepng_encode32_file(filename, img, opts->size, opts->size);
+#endif
+	}
+
 	free(opts);
 	free(img);
-
-	if (err)
-		return 1;
 
 	return 0;
 }

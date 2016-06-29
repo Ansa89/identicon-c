@@ -43,19 +43,6 @@
 #include "sha512.h"
 #endif
 
-// PNG functions
-#if (defined USE_STB)
-#ifndef  STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#endif
-#include "stb_image_write.h"
-#else
-#ifndef LODEPNG_NO_COMPILE_CPP
-#define LODEPNG_NO_COMPILE_CPP
-#endif
-#include "lodepng.h"
-#endif
-
 #include "identicon-c.h"
 
 
@@ -400,58 +387,6 @@ unsigned char *new_identicon(identicon_options_t *opts) {
 
 	img = malloc(sizeof(unsigned char) * opts->size * opts->size * 4);
 	draw_identicon(img, opts);
-
-	return img;
-}
-
-
-/**
- * Write a PNG file containing the identicon image.
- *
- * @param[in] filename The PNG file name.
- * @param[in] img      The image.
- * @param[in] opts     The identicon options.
- *
- * @return 0 on success.
- */
-int identicon_write_png(char *filename, unsigned char *img, identicon_options_t *opts) {
-	int err;
-
-	if ((filename == NULL) || (img == NULL) || (opts == NULL))
-		return -2;
-
-#if defined(USE_STB)
-	err = stbi_write_png(filename, opts->size, opts->size, 4, img, opts->size * 4) - 1;
-#else
-	err = lodepng_encode32_file(filename, img, opts->size, opts->size);
-#endif
-
-	return err;
-}
-
-
-/**
- * Create a new identicon and write it to a PNG file.
- *
- * @param[in] filename The PNG file name.
- * @param[in] opts     The identicon options.
- *
- * @return A new variable containing the identicon or NULL if an error occurred.
- */
-unsigned char *new_identicon_write_png(char *filename, identicon_options_t *opts) {
-	unsigned char *img = NULL;
-	int err;
-
-	if ((filename == NULL) || (opts == NULL))
-		return NULL;
-
-	img = new_identicon(opts);
-	err = identicon_write_png(filename, img, opts);
-
-	if (err) {
-		free(img);
-		return NULL;
-	}
 
 	return img;
 }

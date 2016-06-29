@@ -60,10 +60,4 @@ identicon_options_t *new_default_identicon_options();
 // Create a new identicon
 unsigned char *new_identicon(identicon_options_t *opts);
 
-// Write a PNG file containing the identicon image
-int identicon_write_png(char *filename, unsigned char *img, identicon_options_t *opts);
-
-// Create a new identicon and write it to a PNG file
-unsigned char *new_identicon_write_png(char *filename, identicon_options_t *opts);
-
 #endif

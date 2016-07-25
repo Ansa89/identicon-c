@@ -20,7 +20,7 @@ You can build example code with `make example` and then run `./example` to see w
 
 You can choose from 3 different libraries to write PNGs:
 * [lodepng](https://github.com/lvandeve/lodepng) (this is the default)
-* [stb](https://github.com/nothings/stb) (`make USE_STB=1`)
-* [cairo](https://www.cairographics.org/) (`make USE_CAIRO=1`)
+* [stb](https://github.com/nothings/stb) (`make USE_STB=1 example`)
+* [cairo](https://www.cairographics.org/) (`make USE_CAIRO=1 example`)
 
 Note that lodepng and stb don't need any additional dependency.

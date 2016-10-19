@@ -7,12 +7,13 @@ INCLUDEDIR ?= $(PREFIX)/include
 STATIC_LIB = $(BASE_NAME).a
 PC_FILE = $(BASE_NAME).pc
 HEADER = identicon-c.h
+HEADER_LIBPNG = identicon-c_libpng.h
 TARGET_ONLY = NO
 
 SOURCES = identicon-c.c
 OBJS = $(SOURCES:.c=.o)
 
-CFLAGS = -Wall -Wextra -fPIC -Ilibs
+CFLAGS = -Wall -Wextra -fPIC -I. -Ilibs
 LDFLAGS = -shared -lm
 
 # Check what crypto library we will use
@@ -24,6 +25,13 @@ else ifeq ($(USE_OPENSSL), 1)
     CFLAGS += -DUSE_OPENSSL
 else
     SOURCES += libs/md5.c libs/sha1.c libs/sha256.c libs/sha512.c
+endif
+
+# Check if we have libpng
+CHECK_LIBPNG = $(shell pkg-config --exists libpng || echo -n "error")
+ifneq ($(CHECK_LIBPNG), error)
+    DEPS += libpng
+    CFLAGS += -DHAVE_LIBPNG
 endif
 
 # Check what png library we will use
@@ -107,6 +115,10 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 	@install -D -m 0755 $(TARGET) $(abspath $(DESTDIR)/$(LIBDIR)/$(TARGET))
 	@echo "Installing $(HEADER)"
 	@install -D -m 0644 $(HEADER) $(abspath $(DESTDIR)/$(INCLUDEDIR)/$(HEADER))
+	@if [ "$(CHECK_LIBPNG)" != "error" ]; then ;\
+		echo "Installing $(HEADER_LIBPNG)" ;\
+		install -D -m 0644 $(HEADER_LIBPNG) $(abspath $(DESTDIR)/$(INCLUDEDIR)/$(HEADER_LIBPNG)) ;\
+	fi
 	@echo "Installing $(PC_FILE)"
 	@install -D -m 0644 $(PC_FILE) $(abspath $(DESTDIR)/$(PREFIX)/share/pkgconfig/$(PC_FILE))
 	@if [ "$(NO_STATIC)" != "1" -a -e "$(STATIC_LIB)" ]; then \

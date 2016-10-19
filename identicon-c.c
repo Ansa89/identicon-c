@@ -1,5 +1,5 @@
 /**
- * identicon.c - Functions to generate an identicon.
+ * identicon-c.c - Functions to generate an identicon.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,9 @@
 #endif
 
 #include "identicon-c.h"
+#if defined(HAVE_LIBPNG)
+#include "identicon-c_libpng.h"
+#endif
 
 
 /**
@@ -390,3 +393,62 @@ unsigned char *new_identicon(identicon_options_t *opts) {
 
 	return img;
 }
+
+
+#if defined(HAVE_LIBPNG)
+/**
+ * Convert identicon array image to png_byte (facility for libpng).
+ *
+ * @param[in] img  The image (already allocated).
+ * @param[in] opts The identicon options.
+ *
+ * @return A new variable containing the identicon or NULL if an error occurred.
+ */
+png_byte **png_new_identicon_from_array(unsigned char *img, identicon_options_t *opts) {
+	uint32_t x, y;
+	unsigned char *pixel = NULL;
+	png_byte **row_pointers = NULL;
+
+	if ((img == NULL) || (opts == NULL))
+		return NULL;
+
+	row_pointers = malloc(sizeof(png_byte *) * opts->size);
+	for (y = 0; y < opts->size; y++) {
+		row_pointers[y] = malloc(sizeof(png_byte) * opts->size * 4);
+		for (x = 0; x < opts->size; x++) {
+			pixel = img + (y * opts->size * 4) + (x * 4);
+			memcpy(&row_pointers[y][x * 4], pixel, 4);
+		}
+	}
+
+	return row_pointers;
+}
+
+
+/**
+ * Create a new identicon (facility for libpng).
+ *
+ * @param[in] opts The identicon options.
+ *
+ * @return A new variable containing the identicon or NULL if an error occurred.
+ */
+png_byte **png_new_identicon(identicon_options_t *opts) {
+	unsigned char *img = NULL;
+	png_byte **row_pointers = NULL;
+
+	if (opts == NULL)
+		return NULL;
+
+	img = malloc(sizeof(unsigned char) * opts->size * opts->size * 4);
+	draw_identicon(img, opts);
+
+	if (img == NULL)
+		return NULL;
+
+	row_pointers = png_new_identicon_from_array(img, opts);
+
+	free(img);
+
+	return row_pointers;
+}
+#endif

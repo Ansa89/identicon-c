@@ -1,5 +1,5 @@
 /**
- * identicon.h - Declaration of functions and data types to
+ * identicon-c.h - Declaration of functions and data types to
  * generate an identicon.
  *
  * This program is free software: you can redistribute it and/or modify

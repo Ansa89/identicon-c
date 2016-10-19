@@ -7,6 +7,8 @@ The [cairo](cairo) directory contains the initial version and shouldn't be used 
 
 
 ### Compiling
+Support for [libpng](http://www.libpng.org/pub/png/libpng.html) will be automatically enabled if needed library is found (this has nothing to do with libpng support in example code).
+
 You can choose from 3 different libraries to calculate the hash:
 * [libs/md5.c](libs/md5.c), [libs/sha1.c](libs/sha1.c), [libs/sha256.c](libs/sha256.c), [libs/sha512.c](libs/sha512.c) are from [coreutils](http://www.gnu.org/s/coreutils) and don't need any additional dependency (this is the default)
 * [libsodium](https://github.com/jedisct1/libsodium)<sup>1</sup> (`make USE_SODIUM=1`)

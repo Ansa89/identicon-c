@@ -23,7 +23,7 @@
 #if defined(USE_CAIRO)
 #include <cairo.h>
 #elif defined(USE_LIBPNG)
-#include <png.h>
+#include "identicon-c_libpng.h"
 #define INCHES_PER_METER (100.0/2.54)
 #define DPI 72
 #elif defined(USE_STB)
@@ -91,31 +91,39 @@ int main(int argc, char **argv) {
 #elif defined(USE_LIBPNG)
 		printf("Creating \"%s\" using LibPNG.\n", filename);
 		static FILE *fp;
-		uint32_t x, y;
-		unsigned char *pixel;
+		uint32_t i;
 		png_structp png_ptr;
 		png_infop info_ptr;
-		png_byte row[opts->size * 4];
+		png_byte **row_pointers;
 
 		fp = fopen(filename, "wb");
-		if (fp == NULL)
+		if (fp == NULL) {
+			free(opts);
+			free(img);
 			return 1;
+		}
 
 		png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 		if (png_ptr == NULL) {
 			fclose(fp);
+			free(opts);
+			free(img);
 			return 1;
 		}
 
 		info_ptr = png_create_info_struct(png_ptr);
 		if (info_ptr == NULL) {
 			fclose(fp);
+			free(opts);
+			free(img);
 			return 1;
 		}
 
 		if (setjmp(png_jmpbuf(png_ptr))) {
 			fclose(fp);
 			png_destroy_write_struct(&png_ptr, &info_ptr);
+			free(opts);
+			free(img);
 			return 1;
 		}
 
@@ -127,17 +135,21 @@ int main(int argc, char **argv) {
 				DPI * INCHES_PER_METER, PNG_RESOLUTION_METER);
 		png_write_info(png_ptr, info_ptr);
 
-		for (y = 0; y < opts->size; y++) {
-			for (x = 0; x < opts->size; x++) {
-				pixel = img + (y * opts->size * 4) + (x * 4);
-				memcpy(&row[x * 4], pixel, 4);
+		row_pointers = png_new_identicon_from_array(img, opts);
+
+		if (row_pointers != NULL) {
+			for (i = 0; i < opts->size; i++) {
+				png_write_row(png_ptr, row_pointers[i]);
 			}
-			png_write_row(png_ptr, row);
+			png_write_end(png_ptr, info_ptr);
 		}
 
-		png_write_end(png_ptr, info_ptr);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 		fclose(fp);
+
+		for (i = 0; i < opts->size; i++)
+			free(row_pointers[i]);
+		free(row_pointers);
 #elif defined(USE_STB)
 		printf("Creating \"%s\" using STB.\n", filename);
 		stbi_write_png(filename, opts->size, opts->size, 4, img, opts->size * 4);
@@ -145,10 +157,11 @@ int main(int argc, char **argv) {
 		printf("Creating \"%s\" using LodePNG.\n", filename);
 		lodepng_encode32_file(filename, img, opts->size, opts->size);
 #endif
+
+		free(img);
 	}
 
 	free(opts);
-	free(img);
 
 	return 0;
 }

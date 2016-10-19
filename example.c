@@ -20,10 +20,14 @@
 #include <string.h>
 
 // PNG functions
-#if (defined USE_CAIRO)
+#if defined(USE_CAIRO)
 #include <cairo.h>
-#elif (defined USE_STB)
-#ifndef  STB_IMAGE_WRITE_IMPLEMENTATION
+#elif defined(USE_LIBPNG)
+#include <png.h>
+#define INCHES_PER_METER (100.0/2.54)
+#define DPI 72
+#elif defined(USE_STB)
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #endif
 #include "stb_image_write.h"
@@ -84,6 +88,56 @@ int main(int argc, char **argv) {
 			while (cairo_surface_get_reference_count(surface) > 0)
 				cairo_surface_destroy(surface);
 		}
+#elif defined(USE_LIBPNG)
+		printf("Creating \"%s\" using LibPNG.\n", filename);
+		static FILE *fp;
+		uint32_t x, y;
+		unsigned char *pixel;
+		png_structp png_ptr;
+		png_infop info_ptr;
+		png_byte row[opts->size * 4];
+
+		fp = fopen(filename, "wb");
+		if (fp == NULL)
+			return 1;
+
+		png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+		if (png_ptr == NULL) {
+			fclose(fp);
+			return 1;
+		}
+
+		info_ptr = png_create_info_struct(png_ptr);
+		if (info_ptr == NULL) {
+			fclose(fp);
+			return 1;
+		}
+
+		if (setjmp(png_jmpbuf(png_ptr))) {
+			fclose(fp);
+			png_destroy_write_struct(&png_ptr, &info_ptr);
+			return 1;
+		}
+
+		png_init_io(png_ptr, fp);
+		png_set_IHDR(png_ptr, info_ptr, opts->size, opts->size, 8,
+				PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE,
+				PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+		png_set_pHYs(png_ptr, info_ptr, DPI * INCHES_PER_METER,
+				DPI * INCHES_PER_METER, PNG_RESOLUTION_METER);
+		png_write_info(png_ptr, info_ptr);
+
+		for (y = 0; y < opts->size; y++) {
+			for (x = 0; x < opts->size; x++) {
+				pixel = img + (y * opts->size * 4) + (x * 4);
+				memcpy(&row[x * 4], pixel, 4);
+			}
+			png_write_row(png_ptr, row);
+		}
+
+		png_write_end(png_ptr, info_ptr);
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		fclose(fp);
 #elif defined(USE_STB)
 		printf("Creating \"%s\" using STB.\n", filename);
 		stbi_write_png(filename, opts->size, opts->size, 4, img, opts->size * 4);

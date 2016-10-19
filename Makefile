@@ -31,6 +31,9 @@ ifeq ($(MAKECMDGOALS), example)
 ifeq ($(USE_CAIRO), 1)
     DEPS += cairo
     CFLAGS += -DUSE_CAIRO
+else ifeq ($(USE_LIBPNG), 1)
+    DEPS += libpng
+    CFLAGS += -DUSE_LIBPNG
 else ifeq ($(USE_STB), 1)
     CFLAGS += -DUSE_STB
 else

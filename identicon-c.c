@@ -258,7 +258,7 @@ static void draw_rectangle(unsigned char *img, uint32_t x, uint32_t y, uint32_t 
 		identicon_RGB_t color, identicon_options_t *opts, bool paint_fg) {
 	uint32_t i, j, idx;
 
-	if ((img == NULL) || (opts->transparent && !paint_fg))
+	if ((img == NULL) || (opts == NULL) || (opts->transparent && !paint_fg))
 		return;
 
 	if (opts->stroke && paint_fg) {

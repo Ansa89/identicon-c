@@ -18,9 +18,10 @@ You can choose from 3 different libraries to calculate the hash:
 ### Example code
 You can build example code with `make example` and then run `./example` to see what options it needs.
 
-You can choose from 3 different libraries to write PNGs:
+You can choose from 4 different libraries to write PNGs:
 * [lodepng](https://github.com/lvandeve/lodepng) (this is the default)
 * [stb](https://github.com/nothings/stb) (`make USE_STB=1 example`)
+* [libpng](http://www.libpng.org/pub/png/libpng.html) (`make USE_LIBPNG=1 example`)
 * [cairo](https://www.cairographics.org/) (`make USE_CAIRO=1 example`)
 
 Note that lodepng and stb don't need any additional dependency.

@@ -115,7 +115,7 @@ install: $(TARGET) $(HEADER) $(PC_FILE)
 	@install -D -m 0755 $(TARGET) $(abspath $(DESTDIR)/$(LIBDIR)/$(TARGET))
 	@echo "Installing $(HEADER)"
 	@install -D -m 0644 $(HEADER) $(abspath $(DESTDIR)/$(INCLUDEDIR)/$(HEADER))
-	@if [ "$(CHECK_LIBPNG)" != "error" ]; then ;\
+	@if [ "$(CHECK_LIBPNG)" != "error" ]; then \
 		echo "Installing $(HEADER_LIBPNG)" ;\
 		install -D -m 0644 $(HEADER_LIBPNG) $(abspath $(DESTDIR)/$(INCLUDEDIR)/$(HEADER_LIBPNG)) ;\
 	fi
